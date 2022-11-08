@@ -99,6 +99,84 @@ export async function poolRoutes(fastify: FastifyInstance) {
       });
     }
   );
-}
 
-// min 55
+  fastify.get('/pools', { onRequest: [authenticate] }, async (req) => {
+    const pools = await prisma.pool.findMany({
+      where: {
+        participants: {
+          some: {
+            userId: req.user.sub,
+          },
+        },
+      },
+      include: {
+        _count: {
+          select: {
+            participants: true,
+          },
+        },
+        participants: {
+          select: {
+            id: true,
+
+            user: {
+              select: {
+                avatarUrl: true,
+              },
+            },
+          },
+          take: 4,
+        },
+        owner: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return { pools };
+  });
+
+  fastify.get('/pools/:id', { onRequest: [authenticate] }, async (req, res) => {
+    const getPoolsParams = z.object({
+      id: z.string(),
+    });
+
+    const { id } = getPoolsParams.parse(req.params);
+
+    const pool = await prisma.pool.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        _count: {
+          select: {
+            participants: true,
+          },
+        },
+        participants: {
+          select: {
+            id: true,
+
+            user: {
+              select: {
+                avatarUrl: true,
+              },
+            },
+          },
+          take: 4,
+        },
+        owner: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return { pool };
+  });
+}
